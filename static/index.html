@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Successful</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="banner">
+            <h1>Deployment Successful!</h1>
+        </div>
+        
+        <div class="content">
+            <div class="info-card">
+                <h2>{{.AppName}}</h2>
+                <div class="status-indicator"></div>
+            </div>
+            
+            <div class="details">
+                <div class="detail-item">
+                    <span class="label">Version:</span>
+                    <span class="value">{{.Version}}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="label">Pod Name:</span>
+                    <span class="value">{{.PodName}}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="label">Uptime:</span>
+                    <span class="value">{{.Uptime}}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="label">Total Requests:</span>
+                    <span class="value">{{.TotalRequests}}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="label">Timestamp:</span>
+                    <span class="value">{{.Timestamp}}</span>
+                </div>
+            </div>
+            
+            {{if .RequestsPerEndpoint}}
+            <div class="metrics-section">
+                <h3>Request Statistics</h3>
+                <div class="endpoint-stats">
+                    {{range $endpoint, $count := .RequestsPerEndpoint}}
+                    <div class="endpoint-item">
+                        <span class="endpoint-path">{{$endpoint}}</span>
+                        <span class="endpoint-count">{{$count}}</span>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>
+
