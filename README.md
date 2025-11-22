@@ -17,6 +17,8 @@ kubectl port-forward service/tiny-test 8080:80
 
 Open `http://localhost:8080` in your browser. The image is automatically pulled from Docker Hub.
 
+![Tiny Test App UI](docs/images/tiny-test.png)
+
 ## Features
 
 - Ultra-lightweight container image (~2.13 MB)
