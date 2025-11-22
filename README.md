@@ -1,5 +1,9 @@
 # Tiny Test App
 
+[![CI](https://github.com/bansikah22/tiny-test/actions/workflows/ci.yml/badge.svg)](https://github.com/bansikah22/tiny-test/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker Hub](https://img.shields.io/badge/docker-bansikah%2Ftiny--test-blue)](https://hub.docker.com/r/bansikah/tiny-test)
+
 A minimal Golang web application designed for testing Kubernetes deployments. The application provides a lightweight container image (~2.13 MB) with a simple web UI and health check endpoints, optimized with UPX compression.
 
 ## Quick Start
