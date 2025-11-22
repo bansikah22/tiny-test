@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -44,8 +45,12 @@ func main() {
 	podName := getEnv("POD_NAME", "unknown")
 
 	// Create file server for static files
-	fs := http.FS(staticFiles)
-	fileServer := http.FileServer(fs)
+	// Use subdirectory to serve files from static/ directory
+	staticFS, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		log.Fatalf("Failed to create static filesystem: %v", err)
+	}
+	fileServer := http.FileServer(http.FS(staticFS))
 
 	// Serve static files
 	http.Handle("/static/", trackMetrics("/static/", http.StripPrefix("/static/", fileServer)))
