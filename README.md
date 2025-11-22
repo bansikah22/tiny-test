@@ -137,6 +137,27 @@ kubectl logs -l app=tiny-test
 - `POD_NAME` - Pod name (default: "unknown", automatically set in Kubernetes)
 - `PORT` - Server port (default: "8080")
 
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Workflow**: Automatically runs on every PR and push to main/master
+  - Builds the Go application
+  - Builds and tests the Docker image
+  - Verifies image size
+  - Tests all endpoints
+
+- **Release Workflow**: Automatically builds and pushes Docker images when:
+  - A version tag is pushed (e.g., `v1.0.0`)
+  - Manually triggered via workflow_dispatch
+  
+  The workflow:
+  - Builds the Docker image with UPX compression
+  - Pushes to Docker Hub with version and latest tags
+  - Creates a GitHub release
+
+See `.github/workflows/` for workflow definitions.
+
 ## Development
 
 ### Local Development

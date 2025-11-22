@@ -38,6 +38,15 @@ Before submitting a PR:
 - Test deployment on a Kubernetes cluster
 - Ensure all endpoints work correctly
 
+**Note**: All PRs are automatically tested via GitHub Actions CI. The CI will:
+- Build the Go application
+- Build and test the Docker image
+- Verify image size
+- Test all endpoints
+- Ensure the build completes successfully
+
+Your PR must pass all CI checks before it can be merged.
+
 ### Pull Request Process
 
 1. Ensure your PR has a clear description

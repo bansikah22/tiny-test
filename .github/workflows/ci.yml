@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ master ]
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Verify dependencies
+      run: go mod download
+
+    - name: Build application
+      run: |
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+          -ldflags '-w -s -extldflags "-static"' \
+          -trimpath \
+          -o tiny-test .
+
+    - name: Build Docker image
+      run: |
+        docker build -t tiny-test:test .
+
+    - name: Verify image size
+      run: |
+        IMAGE_SIZE=$(docker images tiny-test:test --format "{{.Size}}")
+        echo "✓ Docker image built successfully"
+        echo "Image size: ${IMAGE_SIZE}"
+
+    - name: Test Docker image
+      run: |
+        docker run -d --name test-container -p 8080:8080 tiny-test:test
+        sleep 5
+        # Test health endpoint
+        curl -f http://localhost:8080/healthz || (docker logs test-container && exit 1)
+        # Test version endpoint
+        curl -f http://localhost:8080/version || (docker logs test-container && exit 1)
+        # Test info endpoint
+        curl -f http://localhost:8080/info || (docker logs test-container && exit 1)
+        # Test metrics endpoint
+        curl -f http://localhost:8080/metrics || (docker logs test-container && exit 1)
+        # Cleanup
+        docker stop test-container
+        docker rm test-container
+        echo "✓ All endpoints tested successfully"
+
