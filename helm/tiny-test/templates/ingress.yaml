@@ -1,69 +1,54 @@
-{{- if .Values.ingress.enabled -}}
-{{- if eq .Values.ingress.className "gateway-api" }}
+{{- if and .Values.ingress.enabled (eq .Values.ingress.className "gateway-api") (gt (len .Values.ingress.hosts) 0) }}
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: {{ include "tiny-test.fullname" . }}-route
   labels:
     app.kubernetes.io/name: {{ include "tiny-test.name" . }}
-    helm.sh/chart: {{ include "tiny-test.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   parentRefs:
     - name: {{ include "tiny-test.fullname" . }}-gateway
   hostnames:
-    {{- range .Values.ingress.hosts }}
+  {{- range .Values.ingress.hosts }}
     - {{ .host }}
-    {{- end }}
+  {{- end }}
   rules:
+  {{- range .Values.ingress.hosts }}
     - matches:
-        {{- range .Values.ingress.hosts }}
-        {{- range .paths }}
+      {{- range .paths }}
         - path:
-            type: {{ .pathType }}
+            type: {{ .pathType | default "PathPrefix" }}
             value: {{ .path }}
-        {{- end }}
-        {{- end }}
+      {{- end }}
       backendRefs:
-        - name: {{ include "tiny-test.fullname" . }}
+        - name: {{ include "tiny-test.fullname" $ }}
+          namespace: {{ $.Release.Namespace | default "default" }}
           port: {{ $.Values.service.port }}
-{{- else }}
+  {{- end }}
+{{- else if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "tiny-test.fullname" . }}
-  labels:
-    app.kubernetes.io/name: {{ include "tiny-test.name" . }}
-    helm.sh/chart: {{ include "tiny-test.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-  {{- with .Values.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
-  {{- if .Values.ingress.className }}
-  ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
+  ingressClassName: {{ .Values.ingress.className | quote }}
   rules:
-    {{- range .Values.ingress.hosts }}
+  {{- range .Values.ingress.hosts }}
     - host: {{ .host }}
       http:
         paths:
-          {{- range .paths }}
+        {{- range .paths }}
           - path: {{ .path }}
-            pathType: {{ .pathType }}
+            pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
                 name: {{ include "tiny-test.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
-          {{- end }}
-    {{- end }}
+        {{- end }}
+  {{- end }}
   {{- if .Values.ingress.tls }}
   tls:
-    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- toYaml .Values.ingress.tls | nindent 4 }}
   {{- end }}
-{{- end }}
 {{- end }}

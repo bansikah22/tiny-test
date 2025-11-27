@@ -56,11 +56,13 @@ container:
 
 ingress:
   enabled: false
-  className: ""
+  className: nginx # or gateway-api
   annotations: {}
-  hosts:
-    - host: tiny-test.local
-      paths:
-        - path: /
-          pathType: Prefix
+  # Example hosts configuration:
+  # hosts:
+  #   - host: tiny-test.example.com
+  #     paths:
+  #       - path: /
+  #         # For Ingress use "Prefix"; for Gateway API HTTPRoute use "PathPrefix"
+  #         pathType: Prefix
   tls: []

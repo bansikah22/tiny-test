@@ -2,9 +2,9 @@ apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: tiny-test-gateway
-  namespace: default
+  # namespace: default   # Optional: uncomment to use a specific namespace
 spec:
-  gatewayClassName: eg
+  gatewayClassName: <YOUR-GATEWAY-CLASS-NAME>   # e.g., 'eg' for Envoy Gateway or your cloud provider's class
   listeners:
     - name: http
       protocol: HTTP

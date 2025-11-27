@@ -2,6 +2,10 @@
 
 This guide explains how to deploy the tiny-test application using Gateway API in production environments.
 
+## Tested With
+
+Tested with Gateway API v1beta1 controllers such as Envoy Gateway and Istio. Verify whether your controller supports v1beta1 or v1 before applying manifests, and adjust `apiVersion` accordingly.
+
 ## What is Gateway API?
 
 Gateway API is the modern Kubernetes standard for traffic routing, replacing legacy Ingress. It provides:
@@ -50,7 +54,7 @@ Example with Envoy Gateway:
 kubectl apply -f https://github.com/envoyproxy/gateway/releases/latest/download/install.yaml
 ```
 
-Wait for the controller to be ready:
+Wait for the controller to be ready before applying Gateway/HTTPRoute:
 
 ```bash
 kubectl wait --timeout=5m -n envoy-gateway-system deployment/envoy-gateway --for=condition=Available

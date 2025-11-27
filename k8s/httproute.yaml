@@ -6,7 +6,7 @@ spec:
   parentRefs:
     - name: tiny-test-gateway
   hostnames:
-    - tiny-test.example.com
+    - tiny-test.example.com  # CHANGE to your domain
   rules:
     - matches:
         - path:
@@ -14,4 +14,5 @@ spec:
             value: /
       backendRefs:
         - name: tiny-test
+          namespace: default
           port: 80
