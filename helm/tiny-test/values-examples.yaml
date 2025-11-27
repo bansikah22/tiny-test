@@ -1,0 +1,47 @@
+# Example values for different deployment scenarios
+
+# Production deployment with LoadBalancer
+# helm upgrade --install tiny-test ./helm/tiny-test -f values-production.yaml
+production:
+  replicaCount: 3
+  image:
+    registry: docker.io
+    repository: bansikah/tiny-test
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+  resources:
+    requests:
+      memory: "32Mi"
+      cpu: "20m"
+    limits:
+      memory: "64Mi"
+      cpu: "100m"
+
+# Development/Testing with NodePort
+# helm upgrade --install tiny-test ./helm/tiny-test --set service.type=NodePort
+development:
+  replicaCount: 1
+  image:
+    tag: "latest"
+  service:
+    type: NodePort
+
+# With Ingress enabled
+# helm upgrade --install tiny-test ./helm/tiny-test -f values-ingress.yaml
+ingress:
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: tiny-test.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: tiny-test-tls
+        hosts:
+          - tiny-test.example.com

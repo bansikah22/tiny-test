@@ -31,16 +31,70 @@ Open `http://localhost:8080` in your browser. The image is automatically pulled 
 - Uptime tracking and display
 - Kubernetes-ready with deployment and service manifests
 
-## Kubernetes Deployment
+## Deployment
 
 ### Prerequisites
 
-- Kubernetes cluster access
+- Kubernetes cluster (any cluster: EKS, AKS, GKE, Minikube, kind, k3s, etc.)
 - `kubectl` configured and connected to your cluster
+- (Optional) Helm 3+ for Helm-based deployments
 
-### Deploy
+The application uses a pre-built image from Docker Hub (`bansikah/tiny-test:latest`) - no local build required.
 
-The deployment uses the pre-built image from Docker Hub (`bansikah/tiny-test:latest`). No local build required.
+### Option 1: Helm (Recommended)
+
+Helm provides easier configuration management and upgrades.
+
+```bash
+# Install to the default namespace
+helm upgrade --install tiny-test ./helm/tiny-test
+
+# Or install to a specific namespace
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --namespace tiny-test \
+  --create-namespace
+
+# Customize deployment
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --set image.tag=v1.0.0 \
+  --set replicaCount=3 \
+  --set service.type=LoadBalancer \
+  --set resources.requests.memory=32Mi
+```
+
+**Available Configuration Options:**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `image.registry` | Docker registry | `docker.io` |
+| `image.repository` | Image repository | `bansikah/tiny-test` |
+| `image.tag` | Image tag | `latest` |
+| `replicaCount` | Number of replicas | `1` |
+| `service.type` | Service type (ClusterIP, NodePort, LoadBalancer) | `ClusterIP` |
+| `service.port` | Service port | `80` |
+| `resources.requests.cpu` | CPU request | `10m` |
+| `resources.requests.memory` | Memory request | `16Mi` |
+| `resources.limits.cpu` | CPU limit | `50m` |
+| `resources.limits.memory` | Memory limit | `32Mi` |
+| `ingress.enabled` | Enable ingress | `false` |
+
+**Verify Deployment:**
+
+```bash
+kubectl get all -l app.kubernetes.io/name=tiny-test
+```
+
+**Uninstall:**
+
+```bash
+helm uninstall tiny-test
+# If installed to a specific namespace
+helm uninstall tiny-test -n tiny-test
+```
+
+### Option 2: Kubernetes Manifests
+
+Direct deployment using raw Kubernetes YAML files.
 
 ```bash
 kubectl apply -f k8s/
@@ -49,6 +103,14 @@ kubectl apply -f k8s/
 This will create:
 - A Deployment with 1 replica
 - A ClusterIP Service exposing port 80
+
+**Verify Deployment:**
+
+```bash
+kubectl get deployment tiny-test
+kubectl get pods -l app=tiny-test
+kubectl get service tiny-test
+```
 
 ### Access the Application
 
@@ -60,9 +122,41 @@ kubectl port-forward service/tiny-test 8080:80
 
 Then open `http://localhost:8080` in your browser.
 
+#### LoadBalancer (Cloud Providers)
+
+For cloud environments (EKS, AKS, GKE), use a LoadBalancer:
+
+**With Helm:**
+```bash
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --set service.type=LoadBalancer
+```
+
+**With manifests:**
+Modify `k8s/service.yaml`:
+```yaml
+spec:
+  type: LoadBalancer
+```
+
+Then apply and get the external IP:
+```bash
+kubectl apply -f k8s/service.yaml
+kubectl get service tiny-test -w
+```
+
 #### NodePort
 
-To expose via NodePort, modify `k8s/service.yaml`:
+For local clusters (Minikube, kind, k3s) or when LoadBalancer is unavailable:
+
+**With Helm:**
+```bash
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --set service.type=NodePort
+```
+
+**With manifests:**
+Modify `k8s/service.yaml`:
 
 ```yaml
 spec:
@@ -76,10 +170,25 @@ kubectl apply -f k8s/service.yaml
 kubectl get service tiny-test
 ```
 
-Access via any node IP on the assigned NodePort.
+Access via:
+- **Minikube**: `minikube service tiny-test --url`
+- **Other clusters**: `http://<node-ip>:<node-port>`
 
 #### Ingress
 
+For production environments with an Ingress Controller:
+
+**With Helm:**
+```bash
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.hosts[0].host=tiny-test.example.com \
+  --set ingress.hosts[0].paths[0].path=/ \
+  --set ingress.hosts[0].paths[0].pathType=Prefix
+```
+
+**With manifests:**
 Create an Ingress resource pointing to the `tiny-test` service:
 
 ```yaml
@@ -88,8 +197,9 @@ kind: Ingress
 metadata:
   name: tiny-test
 spec:
+  ingressClassName: nginx
   rules:
-  - host: your-domain.com
+  - host: tiny-test.example.com
     http:
       paths:
       - path: /
@@ -107,27 +217,36 @@ Apply with:
 kubectl apply -f ingress.yaml
 ```
 
-### Verify Deployment
+### Monitoring & Troubleshooting
 
-Check deployment status:
-
-```bash
-kubectl get deployment tiny-test
-kubectl get pods -l app=tiny-test
-kubectl get service tiny-test
-```
-
-View pod logs:
-
+**View Logs:**
 ```bash
 kubectl logs -l app=tiny-test
+# Or for Helm deployments
+kubectl logs -l app.kubernetes.io/name=tiny-test
+```
+
+**Check Pod Status:**
+```bash
+kubectl get pods -l app=tiny-test
+kubectl describe pod -l app=tiny-test
+```
+
+**Test Health Endpoint:**
+```bash
+kubectl port-forward service/tiny-test 8080:80
+curl http://localhost:8080/healthz
+curl http://localhost:8080/info
+curl http://localhost:8080/metrics
 ```
 
 ### Image Details
 
 - **Docker Hub**: `bansikah/tiny-test:latest`
-- **Image Size**: ~2.13 MB
-- **Port**: 8080 (exposed as port 80 in service)
+- **Image Size**: ~2.13 MB (minimal for fast deployment testing)
+- **Container Port**: 8080
+- **Service Port**: 80 (in Kubernetes deployments)
+- **Purpose**: Lightweight test image for validating Kubernetes deployments on any cluster
 
 ## Endpoints
 
@@ -182,6 +301,41 @@ go run main.go
 ```
 
 4. Access at `http://localhost:8080`
+
+### Building the Docker Image
+
+```bash
+docker build -t tiny-test:local .
+docker run -p 8080:8080 tiny-test:local
+```
+
+### Testing on Local Kubernetes
+
+**Minikube:**
+```bash
+minikube start
+eval $(minikube docker-env)
+docker build -t bansikah/tiny-test:local .
+
+# Deploy with Helm
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --set image.tag=local \
+  --set image.pullPolicy=Never
+
+# Access
+minikube service tiny-test-tiny-test --url
+```
+
+**kind (Kubernetes in Docker):**
+```bash
+kind create cluster
+kind load docker-image bansikah/tiny-test:local
+
+# Deploy with Helm
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --set image.tag=local \
+  --set image.pullPolicy=Never
+```
 
 ## Security
 
