@@ -176,45 +176,51 @@ Access via:
 
 #### Ingress
 
-For production environments with an Ingress Controller:
+
+#### Gateway API (Recommended for Production)
+
+The Gateway API is the modern standard for traffic routing in Kubernetes, replacing legacy Ingress.
+
+**Important**: Gateway API requires a controller installation (Envoy Gateway, Istio, or cloud provider implementations). For local minikube/kind testing, use port-forward or NodePort instead. See the full production guide below.
+
+**For Production Deployment:**
+
+See [Gateway API Production Setup Guide](docs/GATEWAY_API_PRODUCTION.md) for complete instructions including:
+- Supported implementations (AWS, Azure, GCP, Envoy Gateway, Istio)
+- Step-by-step installation
+- Platform-specific examples
+- DNS configuration
+- Troubleshooting
+
+**Quick Example (requires Gateway API controller):**
+
+```bash
+# Apply Gateway and HTTPRoute
+kubectl apply -f k8s/gateway.yaml
+kubectl apply -f k8s/httproute.yaml
+
+# Check status
+kubectl get gateway tiny-test-gateway
+kubectl get httproute tiny-test-route
+```
 
 **With Helm:**
 ```bash
 helm upgrade --install tiny-test ./helm/tiny-test \
   --set ingress.enabled=true \
-  --set ingress.className=nginx \
-  --set ingress.hosts[0].host=tiny-test.example.com \
-  --set ingress.hosts[0].paths[0].path=/ \
-  --set ingress.hosts[0].paths[0].pathType=Prefix
+  --set ingress.className=gateway-api \
+  --set "ingress.hosts[0].host=tiny-test.example.com" \
+  --set "ingress.hosts[0].paths[0].path=/" \
+  --set "ingress.hosts[0].paths[0].pathType=PathPrefix"
 ```
 
-**With manifests:**
-Create an Ingress resource pointing to the `tiny-test` service:
+**Local Testing on Minikube/kind:**
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: tiny-test
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: tiny-test.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: tiny-test
-            port:
-              number: 80
-```
-
-Apply with:
+Gateway API requires additional controller setup on local clusters. For simpler local testing, use port-forward:
 
 ```bash
-kubectl apply -f ingress.yaml
+kubectl port-forward service/tiny-test 8080:80
+# Access at http://localhost:8080
 ```
 
 ### Monitoring & Troubleshooting
