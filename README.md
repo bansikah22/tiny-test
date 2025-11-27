@@ -176,45 +176,56 @@ Access via:
 
 #### Ingress
 
-For production environments with an Ingress Controller:
 
-**With Helm:**
+#### Gateway API (Recommended for Production)
+
+The Gateway API is the modern standard for traffic routing in Kubernetes, replacing legacy Ingress.
+
+Prerequisites:
+- Ensure Gateway API CRDs and a compatible controller are installed before applying Gateway/HTTPRoute manifests.
+- See [Gateway API Production Setup Guide](docs/GATEWAY_API_PRODUCTION.md).
+
+Gateway API (Helm example):
+
+```bash
+helm upgrade --install tiny-test ./helm/tiny-test \
+  --set ingress.enabled=true \
+  --set ingress.className=gateway-api \
+  --set "ingress.hosts[0].host=tiny-test.example.com" \
+  --set "ingress.hosts[0].paths[0].path=/" \
+  --set "ingress.hosts[0].paths[0].pathType=PathPrefix"
+```
+
+Legacy Ingress (Helm example):
+
 ```bash
 helm upgrade --install tiny-test ./helm/tiny-test \
   --set ingress.enabled=true \
   --set ingress.className=nginx \
-  --set ingress.hosts[0].host=tiny-test.example.com \
-  --set ingress.hosts[0].paths[0].path=/ \
-  --set ingress.hosts[0].paths[0].pathType=Prefix
+  --set "ingress.hosts[0].host=tiny-test.example.com" \
+  --set "ingress.hosts[0].paths[0].path=/" \
+  --set "ingress.hosts[0].paths[0].pathType=Prefix"
 ```
 
-**With manifests:**
-Create an Ingress resource pointing to the `tiny-test` service:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: tiny-test
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: tiny-test.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: tiny-test
-            port:
-              number: 80
-```
-
-Apply with:
+Quick Gateway API example (requires controller):
 
 ```bash
-kubectl apply -f ingress.yaml
+# Apply Gateway and HTTPRoute (after installing controller)
+kubectl apply -f k8s/gateway.yaml
+kubectl apply -f k8s/httproute.yaml
+
+# Check status
+kubectl get gateway tiny-test-gateway
+kubectl get httproute tiny-test-route -o yaml
+```
+
+Local testing (minikube/kind):
+
+Gateway API controllers can be complex to set up locally. For quick validation, use port-forward:
+
+```bash
+kubectl port-forward service/tiny-test 8080:80
+# Access at http://localhost:8080
 ```
 
 ### Monitoring & Troubleshooting
